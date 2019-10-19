@@ -190,6 +190,23 @@ public class DefaultUserDestinationResolverTests {
 	}
 
 	@Test
+	public void handleMessageEncodedUserNameWithPercentTwoEff() {
+		String userName = "https%3A%2F%2Fjoe.openid.example.org%2F|911276df-8a4f-4fda-986a-0713aba85b5e";
+
+		TestSimpUser simpUser = new TestSimpUser(userName);
+		simpUser.addSessions(new TestSimpSession("openid123"));
+		given(this.registry.getUser(userName)).willReturn(simpUser);
+
+		String destination = "/user/" + StringUtils.replace(userName, "/", "%2F") + "/queue/foo";
+
+		Message<?> message = createMessage(SimpMessageType.MESSAGE, new TestPrincipal("joe"), null, destination);
+		UserDestinationResult actual = this.resolver.resolveDestination(message);
+
+		assertThat(actual.getTargetDestinations().size()).isEqualTo(1);
+		assertThat(actual.getTargetDestinations().iterator().next()).isEqualTo("/queue/foo-useropenid123");
+	}
+
+	@Test
 	public void handleMessageWithNoUser() {
 		String sourceDestination = "/user/" + "123" + "/queue/foo";
 		Message<?> message = createMessage(SimpMessageType.MESSAGE, null, "123", sourceDestination);
